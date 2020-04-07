@@ -22,9 +22,10 @@
   },
   "homepage": "https://github.com/kerwin-ly/dg-angular-cli#readme",
   "dependencies": {
-    "ora": "^4.0.3",
+    "chalk": "^4.0.0",
     "commander": "^5.0.0",
-    "inquirer": "^6.2.2"
+    "inquirer": "^6.2.2",
+    "ora": "^4.0.3"
   },
   "devDependencies": {
     "@types/inquirer": "^6.5.0",

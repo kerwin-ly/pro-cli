@@ -1,7 +1,6 @@
 import * as ora from 'ora';
 import * as program from 'commander';
 
-const spinner = ora('Downloading please wait......');
 const option: string = program.parse(process.argv).args[1];
 const defaultName: string = typeof option === 'string' ? option : 'my-project';
 
@@ -14,6 +13,12 @@ const questionList = [
     filter(val: string): string {
       return val.trim();
     },
+  },
+  {
+    type: 'input',
+    name: 'description',
+    message: 'The description of the project',
+    default: null,
   },
   {
     type: 'confirm',
