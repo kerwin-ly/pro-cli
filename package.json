@@ -1,0 +1,43 @@
+{
+  "name": "dg-angular-cli",
+  "version": "1.0.0",
+  "description": "dg-angular-cli",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rm -rf ./lib && tsc -p tsconfig.json && npm link && dg-cli new demo",
+    "build": "rm -rf ./lib && tsc -p tsconfig.json",
+    "lint": "tslint -p tsconfig.json"
+  },
+  "bin": {
+    "dg-cli": "./lib/bin/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kerwin-ly/dg-angular-cli.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kerwin-ly/dg-angular-cli/issues"
+  },
+  "homepage": "https://github.com/kerwin-ly/dg-angular-cli#readme",
+  "dependencies": {
+    "ora": "^4.0.3",
+    "commander": "^5.0.0",
+    "inquirer": "^6.2.2"
+  },
+  "devDependencies": {
+    "@types/inquirer": "^6.5.0",
+    "@types/mem-fs-editor": "^5.1.1",
+    "@types/node": "^13.9.8",
+    "prettier": "^2.0.2",
+    "ts-node": "^8.8.1",
+    "tslint": "^6.1.1",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.8.3",
+    "codelyzer": "^5.2.2"
+  },
+  "files": [
+    "lib/**/*"
+  ]
+}
