@@ -33,7 +33,6 @@ function copydir(sourceDir: string, targetDir: string, callback?: NoParamCallbac
         });
       });
     } catch (err) {
-      console.error(err);
       callback && callback(err);
     }
   }
