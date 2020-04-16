@@ -26,6 +26,12 @@ const questionList = [
     message: 'Would you like to enable the commit lint?',
     default: true,
   },
+  {
+    type: 'confirm',
+    name: 'continuous',
+    message: 'Would you like to use CI/CD?',
+    default: true,
+  },
 ];
 
 export { questionList };

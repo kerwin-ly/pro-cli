@@ -1,0 +1,55 @@
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  # 内置环境变量 https://docs.gitlab.com/ee/ci/variables/
+  # $DOCKER_USER $DOCKER_PWD 在settings CI/CD中的Secret variables配置，如果是protected表示保护分支有效
+  DEV_TAG: develop
+  PROD_TAG: release
+  REPO: dockerhub.datagrand.com/datagrand/rpa-assist-frontend
+  PROJECT_REPO_NAMESPACE: liyi
+  PROJECT_REPO_NAME: rpa-assist-frontend
+
+before_script:
+  - docker login -u $RPA_ASSIST_USER -p $RPA_ASSIST_PWD http://dockerhub.datagrand.com
+  - mkdir $PROJECT_REPO_NAME
+  - cd $PROJECT_REPO_NAME
+  - git init
+  - git remote add origin ssh://git@git.datagrand.com:58422/$PROJECT_REPO_NAMESPACE/$PROJECT_REPO_NAME.git
+  - git fetch --depth=1 origin $CI_COMMIT_SHA
+  - git reset --hard FETCH_HEAD
+  - export DATE=$(date +%Y%m%d)
+  - export TAG_SUFFIX="ci_${DATE}_${CI_COMMIT_SHA}"
+  - echo 'TAG_SUFFIX:' $TAG_SUFFIX
+  - echo 'commit id full:' $CI_COMMIT_SHA
+  - echo 'commit user:' $GITLAB_USER_NAME
+
+# develop
+build:
+  stage: build
+  script:
+    - sh build/build.sh $REPO ${DEV_TAG}_${TAG_SUFFIX}
+  allow_failure: false
+
+# test
+test:
+  stage: test
+  script:
+    - sh build/test.sh $REPO:${DEV_TAG}_${TAG_SUFFIX}
+  allow_failure: false
+  dependencies:
+    - build
+
+# production
+deploy:
+  stage: deploy
+  when: manual
+  only:
+    - master
+  script:
+    - sh build/deploy.sh $REPO:${PROD_TAG}_${TAG_SUFFIX}
+  allow_failure: false
+  dependencies:
+    - test

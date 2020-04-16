@@ -76,6 +76,7 @@
     "directive-class-suffix": true,
     "no-access-missing-member": false,
     "templates-use-public": false,
-    "invoke-injectable": false
+    "invoke-injectable": false,
+    "comma-dangle": "never"
   }
 }

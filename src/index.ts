@@ -7,9 +7,10 @@ import { exec } from 'child_process';
 import * as fs from 'fs';
 import * as fsExtra from 'fs-extra';
 import * as chalk from 'chalk';
+import { Subject } from 'rxjs';
 
 const downloadProcess = ora('Download template...');
-const modifyProcess = ora('Install packages...');
+const modifyProcess = ora('Update template...');
 
 interface Package {
   name: string;
@@ -25,6 +26,7 @@ export default class Creator {
     inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
       if (fs.existsSync(process.cwd() + `/${repository}`) || fs.existsSync(process.cwd() + `/${answers['name']}`)) {
         console.log(chalk.red('Error: The directory is existed, please remove it and try again.'));
+        return;
       }
       this.downloadTemplate(answers);
     });
@@ -70,7 +72,7 @@ export default class Creator {
    * @memberof Creator
    */
   updatePackage(answers: inquirer.Answers): void {
-    const { name, description, commitlint } = answers;
+    const { name, description, commitlint, continuous } = answers;
     modifyProcess.start();
 
     try {
@@ -80,16 +82,41 @@ export default class Creator {
       content.name = name;
       content.description = description;
 
+      // add commitlint template
       if (commitlint) {
         this.addCommitlint(content);
       }
 
+      // add CI/CD template
+      if (continuous) {
+        this.addContinuousTool();
+      }
+
       fs.writeFileSync(pkg, JSON.stringify(content, null, '\t'));
-      modifyProcess.succeed('Install packages succeed');
+      modifyProcess.succeed('Update template succeed');
     } catch (error) {
-      modifyProcess.fail('Install packages failed');
+      modifyProcess.fail('Update template failed');
       throw error;
     }
+  }
+
+  /**
+   * 添加ci/cd工具
+   * @memberof Creator
+   */
+  addContinuousTool(): void {
+    const fileReadStream = fs.createReadStream(path.join(__dirname, './template/cicd/.gitlab-ci.yml'));
+    console.log(fileReadStream);
+    const fileWriteStream = fs.createWriteStream(process.cwd() + `/${repository}/.gitlab-ci.yml`);
+
+    fileReadStream.on('data', (data: string | Buffer) => {
+      console.log(data);
+      fileWriteStream.write(data);
+    });
+
+    fileReadStream.on('end', () => {
+      fileWriteStream.end();
+    });
   }
 
   /**
@@ -105,7 +132,7 @@ export default class Creator {
     content.husky.hooks['commit-msg'] = 'commitlint -E HUSKY_GIT_PARAMS';
     fs.writeFileSync(
       process.cwd() + `/${repository}/commitlint.config.js`,
-      fs.readFileSync(path.join(__dirname, './template/commitlint.config.js'))
+      fs.readFileSync(path.join(__dirname, './template/commitlint/commitlint.config.js'))
     );
   }
 
