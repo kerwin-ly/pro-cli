@@ -26,12 +26,14 @@
     "commander": "^5.0.0",
     "fs-extra": "^9.0.0",
     "inquirer": "^6.2.2",
+    "lodash": "^4.17.15",
     "ora": "^4.0.3",
     "rxjs": "^6.5.5"
   },
   "devDependencies": {
     "@types/fs-extra": "^8.1.0",
     "@types/inquirer": "^6.5.0",
+    "@types/lodash": "^4.14.149",
     "@types/mem-fs-editor": "^5.1.1",
     "@types/node": "^13.9.8",
     "codelyzer": "^5.2.2",

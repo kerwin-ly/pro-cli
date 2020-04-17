@@ -32,6 +32,18 @@ const questionList = [
     message: 'Would you like to use CI/CD?',
     default: true,
   },
+  {
+    type: 'input',
+    name: 'dockerRepositoryUrl',
+    message: 'Input the docker image address of your project',
+    default: 'http://dockerhub.dg.com/dg/project',
+  },
+  {
+    type: 'input',
+    name: 'gitRepositoryUrl',
+    message: 'Input the ssh git repository address of your project',
+    default: 'ssh://git@git.dg.com:xxxx/web/project.git',
+  },
 ];
 
 export { questionList };
