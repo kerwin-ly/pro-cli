@@ -1,5 +1,6 @@
 import * as ora from 'ora';
 import * as program from 'commander';
+import { Inquirer, Answers } from 'inquirer';
 
 const option: string = program.parse(process.argv).args[1];
 const defaultName: string = typeof option === 'string' ? option : 'my-project';
@@ -18,7 +19,7 @@ const questionList = [
     type: 'input',
     name: 'description',
     message: 'The description of the project',
-    default: null,
+    default: 'An angular project',
   },
   {
     type: 'confirm',
@@ -34,16 +35,57 @@ const questionList = [
   },
   {
     type: 'input',
-    name: 'dockerRepositoryUrl',
-    message: 'Input the docker image address of your project',
-    default: 'http://dockerhub.dg.com/dg/project',
-  },
-  {
-    type: 'input',
     name: 'gitRepositoryUrl',
     message: 'Input the ssh git repository address of your project',
     default: 'ssh://git@git.dg.com:xxxx/web/project.git',
+    validate: (input: string) => {
+      if (input.startsWith('ssh://')) {
+        return true;
+      }
+      return 'Only support ssh protocol, please add the prefix of Git url ';
+    },
+    when: hasContinuousTool(),
+  },
+  {
+    type: 'input',
+    name: 'dockerRepositoryUrl',
+    message: 'Input the docker image address of your project',
+    default: 'http://dockerhub.dg.com/dg/project',
+    validate: (input: string) => {
+      console.log('input', input);
+      if (input.startsWith('http://' || input.startsWith('https://'))) {
+        return true;
+      }
+      return 'Please add the prefix of Docker url ';
+    },
+    when: hasContinuousTool(),
+  },
+  {
+    type: 'input',
+    name: 'dockerUser',
+    message: 'Input your docker account',
+    default: 'DOCKER_USER',
+    transform: (input: string) => {
+      return input.toUpperCase();
+    },
+    when: hasContinuousTool(),
+  },
+  {
+    type: 'input',
+    name: 'dockerPassword',
+    message: 'Input your docker password',
+    default: 'DOCKER_PWD',
+    transform: (input: string) => {
+      return input.toUpperCase();
+    },
+    when: hasContinuousTool(),
   },
 ];
+
+function hasContinuousTool() {
+  return function (answers: Answers) {
+    return answers['continuous'];
+  };
+}
 
 export { questionList };
