@@ -1,9 +1,27 @@
-# dg-angular-cli
-dg-angular-cli
+# dg-cli
 
-## TODO
-1. 判断是否依赖公司`gitlab`私有库。修改`ci`，并且拷贝`.ssh`文件。
+> A ci-tooling based on [ng-alain](https://ng-alain.com/docs/getting-started/en).
 
-2. 添加`--help --version`等帮助命令。
+## Getting Started
 
-3. 添加commit lint配置
+Install
+
+```shell
+npm install -g dg-cli
+```
+
+Create a project:
+
+```shell
+dg-cli new my-project
+```
+
+## Features
+- Keep the latest version of Angular
+- Supports custom http interceptor
+- Supports CI/CD config
+- Supports commitlint config 
+
+## Notice
+
+If you want to use CI/CD config, please make sure you have created `Secret variables` in your `gitlab` repository and keep the name unique.
