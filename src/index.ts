@@ -128,8 +128,8 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
     const filePath = process.cwd() + `/${repository}/.gitlab-ci.yml`;
     const fileReadStream = fs.createReadStream(filePath + '.template');
     const fileWriteStream = fs.createWriteStream(filePath);
-    const projectName = get(gitRepositoryUrl.match(/\w*\/(\w*)\.git/), '1'); // get project name,
-    const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1); // get docker address to login, such as http://dockerhub.datagrand.com
+    const projectName = get(gitRepositoryUrl.match(/\w*\/(\w*)\.git/), '1');
+    const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1);
 
     if (!projectName) {
       console.log(chalk.red('Error: Can not get projec name'));

@@ -20,8 +20,8 @@ function copydir(sourceDir: string, targetDir: string, callback?: NoParamCallbac
     try {
       fs.readdir(sourceDir, function (err, paths) {
         paths.forEach(function (path) {
-          var _src = sourceDir + '/' + path;
-          var _dist = targetDir + '/' + path;
+          const _src = sourceDir + '/' + path;
+          const _dist = targetDir + '/' + path;
 
           fs.stat(_src, function (err, stat) {
             if (stat.isFile()) {
@@ -37,5 +37,4 @@ function copydir(sourceDir: string, targetDir: string, callback?: NoParamCallbac
     }
   }
 }
-
 export { copydir };
