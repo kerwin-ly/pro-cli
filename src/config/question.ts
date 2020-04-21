@@ -36,7 +36,7 @@ const questionList = [
   {
     type: 'input',
     name: 'gitRepositoryUrl',
-    message: 'Input the ssh git repository address of your project',
+    message: 'Input the ssh git repository address',
     default: 'ssh://git@git.dg.com:xxxx/web/project.git',
     validate: (input: string) => {
       if (input.startsWith('ssh://')) {
@@ -49,10 +49,9 @@ const questionList = [
   {
     type: 'input',
     name: 'dockerRepositoryUrl',
-    message: 'Input the docker image address of your project',
+    message: 'Input the docker image address',
     default: 'http://dockerhub.dg.com/dg/project',
     validate: (input: string) => {
-      console.log('input', input);
       if (input.startsWith('http://' || input.startsWith('https://'))) {
         return true;
       }
