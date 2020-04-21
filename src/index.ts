@@ -44,6 +44,14 @@ export default class Creator {
       this.updatePackage(answers);
       this.removeExtraFiles();
       this.renameRepository(answers['name']);
+      console.log(`
+
+Your project has been created successfully.
+
+To get started, in one tab, run:
+$ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
+
+`);
     });
   }
 
@@ -54,7 +62,6 @@ export default class Creator {
 
   renameRepository(name: string): void {
     try {
-      console.log('rename');
       fs.renameSync(path.join(__dirname, `../${repository}`), path.join(__dirname, `../${name}`));
     } catch (error) {
       throw error;

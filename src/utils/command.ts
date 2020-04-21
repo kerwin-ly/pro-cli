@@ -11,10 +11,10 @@ process.env.NODE_PATH = __dirname + '/../node_modules'; // 重新指定node运�
  */
 function initCommand(): void {
   program.version('1.0.0', '-v --version');
-  program.usage('<command>');
+
   program
     .command('new')
-    .description('Generate a new Angular project')
+    .description('generate a new Angular project')
     .action(() => {
       project.init();
     });

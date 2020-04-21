@@ -24,4 +24,4 @@ dg-cli new my-project
 
 ## Notice
 
-If you want to use CI/CD config, please make sure you have created `Secret variables` in your `gitlab` repository and keep the name unique.
+If you want to use CI/CD config, please make sure the `Secret variables` in your `gitlab` repository has been created and keep the name unique.
