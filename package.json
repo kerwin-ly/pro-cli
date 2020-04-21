@@ -1,0 +1,65 @@
+{
+  "name": "dg-angular-cli",
+  "version": "1.0.0",
+  "description": "dg-angular-cli",
+  "main": "index.js",
+  "scripts": {
+    "dev": "rm -rf ./lib && tsc -p tsconfig.json && npm link",
+    "build": "rm -rf ./lib && tsc -p tsconfig.json",
+    "lint": "tslint -p tsconfig.json"
+  },
+  "bin": {
+    "dg-cli": "./lib/bin/main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kerwin-ly/dg-angular-cli.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kerwin-ly/dg-angular-cli/issues"
+  },
+  "homepage": "https://github.com/kerwin-ly/dg-angular-cli#readme",
+  "keywords": [
+    "angular",
+    "ng-alain",
+    "cli",
+    "dg",
+    "template",
+    "custom http interceptor"
+  ],
+  "dependencies": {
+    "chalk": "^4.0.0",
+    "commander": "^5.0.0",
+    "fs-extra": "^9.0.0",
+    "inquirer": "^6.2.2",
+    "lodash": "^4.17.15",
+    "ora": "^4.0.3",
+    "rxjs": "^6.5.5"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-conventional": "^8.3.4",
+    "@types/fs-extra": "^8.1.0",
+    "@types/inquirer": "^6.5.0",
+    "@types/lodash": "^4.14.149",
+    "@types/mem-fs-editor": "^5.1.1",
+    "@types/node": "^13.9.8",
+    "codelyzer": "^5.2.2",
+    "husky": "^4.2.5",
+    "prettier": "^2.0.2",
+    "ts-node": "^8.8.1",
+    "tslint": "^6.1.1",
+    "tslint-config-prettier": "^1.18.0",
+    "typescript": "^3.8.3"
+  },
+  "files": [
+    "lib/**/*"
+  ],
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }  
+  }
+}
