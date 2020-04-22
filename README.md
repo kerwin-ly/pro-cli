@@ -1,6 +1,6 @@
 # dg-cli
 
-> A ci-tooling based on [ng-alain](https://ng-alain.com/docs/getting-started/en).The template is [here](https://github.com/kerwin-ly/dg-cli-template)
+> CLI for creating reusable  Angular libraries, based on [ng-alain](https://ng-alain.com/docs/getting-started/en).The template is [here](https://github.com/kerwin-ly/dg-cli-template).
 
 ## Getting Started
 

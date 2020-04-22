@@ -62,7 +62,7 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
 
   renameRepository(name: string): void {
     try {
-      fs.renameSync(path.join(__dirname, `../${repository}`), path.join(__dirname, `../${name}`));
+      fs.renameSync(process.cwd() + `/${repository}`, process.cwd() + `/${name}`);
     } catch (error) {
       throw error;
     }

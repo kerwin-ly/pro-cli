@@ -1,7 +1,7 @@
 {
-  "name": "dg-angular-cli",
+  "name": "dg-cli",
   "version": "1.0.0-rc.1",
-  "description": "dg-angular-cli",
+  "description": "dg-cli",
   "main": "index.js",
   "scripts": {
     "dev": "rm -rf ./lib && tsc -p tsconfig.json && npm link",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kerwin-ly/dg-angular-cli.git"
+    "url": "git+https://github.com/kerwin-ly/dg-cli.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/kerwin-ly/dg-angular-cli/issues"
+    "url": "https://github.com/kerwin-ly/dg-cli/issues"
   },
-  "homepage": "https://github.com/kerwin-ly/dg-angular-cli#readme",
+  "homepage": "https://github.com/kerwin-ly/dg-cli#readme",
   "keywords": [
     "angular",
     "ng-alain",
