@@ -1,6 +1,6 @@
 {
   "name": "dg-angular-cli",
-  "version": "1.0.0",
+  "version": "1.0.0-rc.1",
   "description": "dg-angular-cli",
   "main": "index.js",
   "scripts": {
