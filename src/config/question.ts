@@ -1,6 +1,5 @@
-import * as ora from 'ora';
 import * as program from 'commander';
-import { Inquirer, Answers } from 'inquirer';
+import { Answers } from 'inquirer';
 
 const option: string = program.parse(process.argv).args[1];
 const defaultName: string = typeof option === 'string' ? option : 'my-project';

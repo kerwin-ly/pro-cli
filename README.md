@@ -1,6 +1,6 @@
 # dg-cli
 
-> A ci-tooling based on [ng-alain](https://ng-alain.com/docs/getting-started/en).
+> A ci-tooling based on [ng-alain](https://ng-alain.com/docs/getting-started/en).The template is [here](https://github.com/kerwin-ly/dg-cli-template)
 
 ## Getting Started
 
@@ -17,7 +17,7 @@ dg-cli new my-project
 ```
 
 ## Features
-- Keep the latest version of Angular
+- Keep the latest version of Angsular
 - Supports custom http interceptor
 - Supports CI/CD config
 - Supports commitlint config 
