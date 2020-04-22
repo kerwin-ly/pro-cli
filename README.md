@@ -7,7 +7,7 @@
 Install
 
 ```shell
-npm install -g dg-cli
+npm install -g dg-angular-cli
 ```
 
 Create a project:
