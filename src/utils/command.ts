@@ -14,7 +14,7 @@ function initCommand(): void {
 
   program
     .command('new')
-    .description('generate a new Angular project')
+    .description('create a new Angular project')
     .action(() => {
       project.init();
     });
