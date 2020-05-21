@@ -17,7 +17,7 @@ dg-cli new my-project
 ```
 
 ## Features
-- Keep the latest version of Angsular
+- Keep the latest version of Angular
 - Supports custom http interceptor
 - Supports CI/CD config
 - Supports commitlint config 
