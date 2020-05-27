@@ -1,21 +1,18 @@
 import * as program from 'commander';
 import Creator from '../index';
 
-const project = new Creator();
 process.env.NODE_PATH = __dirname + '/../node_modules'; // 重新指定node运行环境
 
-/**
- * 初始化命令
- * 目前支持 -version, -help
- * @export
- */
 function initCommand(): void {
-  program.version('1.0.0', '-v --version');
+  // program.version('1.0.0', '-v --version');
+  program.version(`dg-cli ${require('../../package').version}`).usage('<command> [options]');
 
   program
-    .command('new')
+    .command('new <app-name>')
     .description('create a new Angular project')
     .action(() => {
+      const project = new Creator();
+
       project.init();
     });
 
