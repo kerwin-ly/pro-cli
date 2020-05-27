@@ -128,7 +128,7 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
     const filePath = process.cwd() + `/${repository}/.gitlab-ci.yml`;
     const fileReadStream = fs.createReadStream(filePath + '.template');
     const fileWriteStream = fs.createWriteStream(filePath);
-    const projectName = get(gitRepositoryUrl.match(/\w*\/(\w*)\.git/), '1');
+    const projectName = get(gitRepositoryUrl.match(/(?<=\/)[^\/]+(?=\.git)/), '0');
     const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1);
 
     if (!projectName) {
