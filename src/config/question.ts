@@ -13,6 +13,13 @@ const questionList = [
     filter(val: string): string {
       return val.trim();
     },
+    validate: (input: string) => {
+      if (input) {
+        return true;
+      }
+
+      return 'Project name is required';
+    },
   },
   {
     type: 'input',
