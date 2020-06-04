@@ -17,7 +17,7 @@ dg-cli new my-project
 ```
 
 ## Features
-- Supports customized http interceptor, and resolve `loading` and `error` of http requests automaticly
+- Supports customized http interceptor, resolves `loading` and `error` of http requests automaticly
 - Supports CI/CD config
 - Supports commitlint config 
 
