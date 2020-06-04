@@ -14,7 +14,7 @@ function initCommand(): void {
       const project = new Creator();
 
       project.init();
-    }); 
+    });
 
   program.parse(process.argv); // 解析字符串组
 
