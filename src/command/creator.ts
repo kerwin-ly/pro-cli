@@ -1,5 +1,5 @@
 import * as inquirer from 'inquirer';
-import { questionList } from '../config/question';
+import { initQuestions } from '../config/question';
 import * as ora from 'ora';
 import { templateUrl, repository } from '../config/constant';
 import { exec, execSync, ExecException } from 'child_process';
@@ -19,21 +19,24 @@ interface Package {
 }
 
 export default class Creator {
+  name: string;
   cmd: program.Command;
 
-  constructor(cmd: program.Command) {
+  constructor(name: string, cmd: program.Command) {
+    this.name = name;
     this.cmd = cmd;
   }
 
   create(): void {
+    const questionList = initQuestions(this.name);
+
     inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
       if (!this.canDownload(answers.name)) return;
-
       this.downloadTemplate(answers);
     });
   }
 
-  async canDownload(name: string): Promise<boolean> {
+  canDownload(name: string): boolean {
     const fileUrl = process.cwd() + `/${name}`;
 
     if (!fs.existsSync(fileUrl)) {
@@ -41,7 +44,7 @@ export default class Creator {
     }
 
     if (this.cmd.force) {
-      await exec(`rm -rf ${fileUrl}`);
+      execSync(`rm -rf ${fileUrl}`);
       return true;
     } else {
       console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
