@@ -1,12 +1,12 @@
 import * as inquirer from 'inquirer';
-import * as path from 'path';
-import { questionList } from './config/question';
+import { questionList } from '../config/question';
 import * as ora from 'ora';
-import { templateUrl, repository } from './config/constant';
+import { templateUrl, repository } from '../config/constant';
 import { exec, execSync, ExecException } from 'child_process';
 import * as fs from 'fs';
 import { get } from 'lodash';
 import * as chalk from 'chalk';
+import * as program from 'commander';
 
 const downloadProcess = ora('Download template...');
 const modifyProcess = ora('Update template...');
@@ -19,17 +19,34 @@ interface Package {
 }
 
 export default class Creator {
-  constructor() {}
+  cmd: program.Command;
 
-  init(): void {
+  constructor(cmd: program.Command) {
+    this.cmd = cmd;
+  }
+
+  create(): void {
     inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
-      if (fs.existsSync(process.cwd() + `/${repository}`) || fs.existsSync(process.cwd() + `/${answers['name']}`)) {
-        console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
-        return;
-      }
+      if (!this.canDownload(answers.name)) return;
 
       this.downloadTemplate(answers);
     });
+  }
+
+  async canDownload(name: string): Promise<boolean> {
+    const fileUrl = process.cwd() + `/${name}`;
+
+    if (!fs.existsSync(fileUrl)) {
+      return true;
+    }
+
+    if (this.cmd.force) {
+      await exec(`rm -rf ${fileUrl}`);
+      return true;
+    } else {
+      console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
+      return false;
+    }
   }
 
   downloadTemplate(answers: inquirer.Answers): void {
