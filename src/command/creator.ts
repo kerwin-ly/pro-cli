@@ -7,6 +7,7 @@ import * as fs from 'fs';
 import { get } from 'lodash';
 import * as chalk from 'chalk';
 import * as program from 'commander';
+import * as handlebars from 'handlebars';
 
 const downloadProcess = ora('Download template...');
 const modifyProcess = ora('Update template...');
@@ -146,8 +147,6 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
     dockerPassword: string
   ): void {
     const filePath = process.cwd() + `/${repository}/.gitlab-ci.yml`;
-    const fileReadStream = fs.createReadStream(filePath + '.template');
-    const fileWriteStream = fs.createWriteStream(filePath);
     const projectName = get(gitRepositoryUrl.match(/(?<=\/)[^\/]+(?=\.git)/), '0');
     const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1);
 
@@ -159,37 +158,18 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
       console.log(chalk.red('Error: Can not get docker login url'));
       return;
     }
-    fileReadStream.on('data', (data: string | Buffer) => {
-      let line = data.toString();
 
-      // update docker image address in ci-template
-      if (line.includes('<DOCKER_IMAGES_ADDRESS>')) {
-        line = line.replace(/<DOCKER_IMAGES_ADDRESS>/, dockerRepositoryUrl);
-      }
-
-      // update git address in ci-template
-      if (line.includes('<GIT_PROJECT_ADDRESS>')) {
-        line = line.replace(/<GIT_PROJECT_ADDRESS>/, gitRepositoryUrl);
-      }
-
-      // update project name in ci-template
-      if (line.includes('<GIT_PROJECT_NAME>')) {
-        line = line.replace(/<GIT_PROJECT_NAME>/, projectName);
-      }
-
-      // update docker info, such as userName, password and dockerLoginUrl
-      if (line.includes('<DOCKER_LOGIN_URL>')) {
-        line = line.replace(/<DOCKER_LOGIN_URL>/, dockerLoginUrl);
-        line = line.replace(/<DOCKER_USER>/, dockerUser);
-        line = line.replace(/<DOCKER_PWD>/, dockerPassword);
-      }
-
-      fileWriteStream.write(line);
-    });
-
-    fileReadStream.on('end', () => {
-      fileWriteStream.end();
-    });
+    const data = {
+      dockerRepositoryUrl,
+      gitRepositoryUrl,
+      projectName,
+      dockerLoginUrl,
+      dockerUser,
+      dockerPassword,
+    };
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const result = handlebars.compile(content)(data);
+    fs.writeFileSync(filePath, result);
   }
 
   addCommitlint(content: Package): void {
