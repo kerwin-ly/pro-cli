@@ -1,12 +1,13 @@
 import * as inquirer from 'inquirer';
-import * as path from 'path';
-import { questionList } from './config/question';
+import { initQuestions } from '../config/question';
 import * as ora from 'ora';
-import { templateUrl, repository } from './config/constant';
+import { templateUrl, repository } from '../config/constant';
 import { exec, execSync, ExecException } from 'child_process';
 import * as fs from 'fs';
 import { get } from 'lodash';
 import * as chalk from 'chalk';
+import * as program from 'commander';
+import * as handlebars from 'handlebars';
 
 const downloadProcess = ora('Download template...');
 const modifyProcess = ora('Update template...');
@@ -19,17 +20,37 @@ interface Package {
 }
 
 export default class Creator {
-  constructor() {}
+  name: string;
+  cmd: program.Command;
 
-  init(): void {
+  constructor(name: string, cmd: program.Command) {
+    this.name = name;
+    this.cmd = cmd;
+  }
+
+  create(): void {
+    const questionList = initQuestions(this.name);
+
     inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
-      if (fs.existsSync(process.cwd() + `/${repository}`) || fs.existsSync(process.cwd() + `/${answers['name']}`)) {
-        console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
-        return;
-      }
-
+      if (!this.canDownload(answers.name)) return;
       this.downloadTemplate(answers);
     });
+  }
+
+  canDownload(name: string): boolean {
+    const fileUrl = process.cwd() + `/${name}`;
+
+    if (!fs.existsSync(fileUrl)) {
+      return true;
+    }
+
+    if (this.cmd.force) {
+      execSync(`rm -rf ${fileUrl}`);
+      return true;
+    } else {
+      console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
+      return false;
+    }
   }
 
   downloadTemplate(answers: inquirer.Answers): void {
@@ -126,8 +147,6 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
     dockerPassword: string
   ): void {
     const filePath = process.cwd() + `/${repository}/.gitlab-ci.yml`;
-    const fileReadStream = fs.createReadStream(filePath + '.template');
-    const fileWriteStream = fs.createWriteStream(filePath);
     const projectName = get(gitRepositoryUrl.match(/(?<=\/)[^\/]+(?=\.git)/), '0');
     const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1);
 
@@ -139,37 +158,18 @@ $ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
       console.log(chalk.red('Error: Can not get docker login url'));
       return;
     }
-    fileReadStream.on('data', (data: string | Buffer) => {
-      let line = data.toString();
 
-      // update docker image address in ci-template
-      if (line.includes('<DOCKER_IMAGES_ADDRESS>')) {
-        line = line.replace(/<DOCKER_IMAGES_ADDRESS>/, dockerRepositoryUrl);
-      }
-
-      // update git address in ci-template
-      if (line.includes('<GIT_PROJECT_ADDRESS>')) {
-        line = line.replace(/<GIT_PROJECT_ADDRESS>/, gitRepositoryUrl);
-      }
-
-      // update project name in ci-template
-      if (line.includes('<GIT_PROJECT_NAME>')) {
-        line = line.replace(/<GIT_PROJECT_NAME>/, projectName);
-      }
-
-      // update docker info, such as userName, password and dockerLoginUrl
-      if (line.includes('<DOCKER_LOGIN_URL>')) {
-        line = line.replace(/<DOCKER_LOGIN_URL>/, dockerLoginUrl);
-        line = line.replace(/<DOCKER_USER>/, dockerUser);
-        line = line.replace(/<DOCKER_PWD>/, dockerPassword);
-      }
-
-      fileWriteStream.write(line);
-    });
-
-    fileReadStream.on('end', () => {
-      fileWriteStream.end();
-    });
+    const data = {
+      dockerRepositoryUrl,
+      gitRepositoryUrl,
+      projectName,
+      dockerLoginUrl,
+      dockerUser,
+      dockerPassword,
+    };
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const result = handlebars.compile(content)(data);
+    fs.writeFileSync(filePath, result);
   }
 
   addCommitlint(content: Package): void {
