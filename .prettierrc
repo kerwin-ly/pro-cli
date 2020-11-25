@@ -4,8 +4,9 @@
   "semi": true,
   "stylelintIntegration": true,
   "tabWidth": 2,
-  "useTabs": false,
+  "useTabs": true,
   "proseWrap": "never",
+  "trailingComma": "none",
   "overrides": [
     {
       "files": ".prettierrc",

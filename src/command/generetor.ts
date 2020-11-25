@@ -1,1 +1,0 @@
-// generate new component

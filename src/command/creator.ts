@@ -1,186 +1,209 @@
 import * as inquirer from 'inquirer';
 import { initQuestions } from '../config/question';
 import * as ora from 'ora';
-import { templateUrl, repository } from '../config/constant';
-import { exec, execSync, ExecException } from 'child_process';
+import { templateUrl, repository, docker, gitHost } from '../config/constant';
+import { execSync } from 'child_process';
 import * as fs from 'fs';
-import { get } from 'lodash';
 import * as chalk from 'chalk';
 import * as program from 'commander';
-import * as handlebars from 'handlebars';
+import { log, error, throwGitlabError } from '../utils/logger';
+import { Project } from '../interface/gitlab-interface';
+import { gitlabApi } from '../api/gitlab';
+import GitGenerator from './generator/git';
+import { GeneratorFactory } from './generator/genetatorFactory';
+import { render, cwd } from '../utils/file';
+import SonarGenerator from './generator/sonar';
 
-const downloadProcess = ora('Download template...');
-const modifyProcess = ora('Update template...');
+const downloadProcess = ora('Downloading template...');
+const modifyProcess = ora('Updating template...');
 
 interface Package {
-  name: string;
-  version: string;
-  description: string;
-  [props: string]: any;
+	name: string;
+	version: string;
+	description: string;
+	[props: string]: any;
 }
 
 export default class Creator {
-  name: string;
-  cmd: program.Command;
+	name: string;
+	cmd: program.Command;
+	static detail: Project;
 
-  constructor(name: string, cmd: program.Command) {
-    this.name = name;
-    this.cmd = cmd;
-  }
+	constructor(name: string, cmd: program.Command) {
+		this.name = name;
+		this.cmd = cmd;
+	}
 
-  create(): void {
-    const questionList = initQuestions(this.name);
+	create(): void {
+		const questionList = initQuestions(this.name);
+		console.log(questionList);
+		inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
+			if (!this.canDownload(answers.name)) return;
+			this.downloadTemplate(answers);
+		});
+	}
 
-    inquirer.prompt<inquirer.Answers>(questionList).then((answers) => {
-      if (!this.canDownload(answers.name)) return;
-      this.downloadTemplate(answers);
-    });
-  }
+	canDownload(name: string): boolean {
+		const fileUrl = cwd() + `/${name}`;
 
-  canDownload(name: string): boolean {
-    const fileUrl = process.cwd() + `/${name}`;
+		if (!fs.existsSync(fileUrl)) {
+			return true;
+		}
 
-    if (!fs.existsSync(fileUrl)) {
-      return true;
-    }
+		if (this.cmd.force) {
+			this.remove(fileUrl);
+			return true;
+		} else {
+			error('Error: The directory already exists, please remove it and try again.');
+			return false;
+		}
+	}
 
-    if (this.cmd.force) {
-      execSync(`rm -rf ${fileUrl}`);
-      return true;
-    } else {
-      console.log(chalk.red('Error: The directory already exists, please remove it and try again.'));
-      return false;
-    }
-  }
+	async downloadTemplate(answers: inquirer.Answers): Promise<void> {
+		downloadProcess.start();
 
-  downloadTemplate(answers: inquirer.Answers): void {
-    downloadProcess.start();
-    exec(`git clone ${templateUrl}`, (err: ExecException | null) => {
-      if (err) {
-        downloadProcess.fail('Download template failed');
-        throw err;
-      }
+		try {
+			execSync(`git clone -b master ${templateUrl}`, { stdio: 'ignore' });
+			downloadProcess.succeed('Download template succeed');
+			this.updateTemplate(answers);
+			this.removeExtraFiles();
+			this.renameRepository(answers['name']);
 
-      downloadProcess.succeed('Download template succeed');
-      this.updatePackage(answers);
-      this.removeExtraFiles();
-      this.renameRepository(answers['name']);
-      console.log(`
+			process.chdir(cwd() + `/${answers['name']}`); // 将node执行目录转移至下层项目目录
+			answers['initGit'] && (await this.initGit(answers['name']));
+			answers['sonarProjectName'] && (await this.initSonar(answers['sonarProjectName']));
 
-Your project has been created successfully.
+			log();
+			log(`🎉  Successfully created project ${chalk.yellow(answers['name'])}.`);
+			answers['initGit'] && log(`For more details, visit ${chalk.yellow(Creator.detail.http_url_to_repo)} `);
+			log();
+			log('👉  To get started, in one tab, run:');
+			log(`$ ${chalk.cyan(`cd ${answers['name']} && yarn && npm start`)}`);
+			log();
+		} catch (err) {
+			downloadProcess.fail('Download template failed');
+			throw err;
+		}
+	}
 
-To get started, in one tab, run:
-$ ${chalk.cyan(`cd ${answers['name']} && npm install && npm start`)}
+	removeExtraFiles(): void {
+		this.remove(cwd() + `/${repository}/.git`);
+	}
 
-`);
-    });
-  }
+	renameRepository(name: string): void {
+		try {
+			fs.renameSync(cwd() + `/${repository}`, cwd() + `/${name}`);
+		} catch (err) {
+			throw new Error('Fail to rename project' + err);
+		}
+	}
 
-  removeExtraFiles(): void {
-    this.remove(process.cwd() + `/${repository}/.git`);
-    this.remove(process.cwd() + `/${repository}/.gitlab-ci.yml.template`);
-  }
+	updateTemplate(answers: inquirer.Answers): void {
+		const { name, description, commitlint, continuous } = answers;
 
-  renameRepository(name: string): void {
-    try {
-      fs.renameSync(process.cwd() + `/${repository}`, process.cwd() + `/${name}`);
-    } catch (error) {
-      throw error;
-    }
-  }
+		modifyProcess.start();
+		try {
+			const pkg = cwd() + `/${repository}/package.json`;
+			const content = JSON.parse(fs.readFileSync(pkg, 'utf-8'));
 
-  updatePackage(answers: inquirer.Answers): void {
-    const { name, description, commitlint, continuous } = answers;
+			content.name = name;
+			content.description = description;
+			// commitlint config
+			commitlint ? this.addCommitlint(content) : this.filterFiles('commitlint');
+			// CI/CD config
+			continuous ? this.addContinuousTool(answers.dockerRepositoryUrl, answers.name) : this.filterFiles('continuous');
 
-    modifyProcess.start();
-    try {
-      const pkg = process.cwd() + `/${repository}/package.json`;
-      const content = JSON.parse(fs.readFileSync(pkg, 'utf-8'));
+			fs.writeFileSync(pkg, JSON.stringify(content, null, '\t'));
+			modifyProcess.succeed('Update template succeed');
+		} catch (err) {
+			modifyProcess.fail('Update template failed');
+			throw err;
+		}
+	}
 
-      content.name = name;
-      content.description = description;
-      // commitlint config
-      commitlint ? this.addCommitlint(content) : this.filterFiles('commitlint');
-      // CI/CD config
-      continuous
-        ? this.addContinuousTool(
-            answers.dockerRepositoryUrl,
-            answers.gitRepositoryUrl,
-            answers.dockerUser,
-            answers.dockerPassword
-          )
-        : this.filterFiles('continuous');
+	filterFiles(type: string): void {
+		switch (type) {
+			case 'continuous':
+				this.remove(cwd() + `/${repository}/build`);
+				break;
+			case 'commitlint':
+				this.remove(cwd() + `/${repository}/commitlint.config.js`);
+				break;
+		}
+	}
 
-      fs.writeFileSync(pkg, JSON.stringify(content, null, '\t'));
-      modifyProcess.succeed('Update template succeed');
-    } catch (error) {
-      modifyProcess.fail('Update template failed');
-      throw error;
-    }
-  }
+	/**
+	 * add CI/CD tool
+	 * @param {string} dockerRepositoryUrl
+	 * @returns {void}
+	 * @memberof Creator
+	 */
+	addContinuousTool(dockerRepositoryUrl: string, projectName: string): void {
+		const dockerLoginUrl = dockerRepositoryUrl.split('/')[0];
 
-  filterFiles(type: string): void {
-    switch (type) {
-      case 'continuous':
-        this.remove(process.cwd() + `/${repository}/build`);
-        this.remove(process.cwd() + `/${repository}/.gitlab-ci.yml.template`);
-        break;
-      case 'commitlint':
-        this.remove(process.cwd() + `/${repository}/commitlint.config.js`);
-        break;
-    }
-  }
+		if (!dockerLoginUrl) {
+			error('Error: Can not get docker login url');
+			process.exit(1);
+		}
 
-  /**
-   * add CI/CD tool
-   * @param {string} dockerRepositoryUrl
-   * @param {string} gitRepositoryUrl
-   * @param {string} dockerUser
-   * @param {string} dockerPassword
-   * @returns {void}
-   * @memberof Creator
-   */
-  addContinuousTool(
-    dockerRepositoryUrl: string,
-    gitRepositoryUrl: string,
-    dockerUser: string,
-    dockerPassword: string
-  ): void {
-    const filePath = process.cwd() + `/${repository}/.gitlab-ci.yml`;
-    const projectName = get(gitRepositoryUrl.match(/(?<=\/)[^\/]+(?=\.git)/), '0');
-    const dockerLoginUrl = get(dockerRepositoryUrl.match(/(https?:\/\/[\w\.]*)\/.*/), 1);
+		const data = {
+			dockerRepositoryUrl,
+			dockerLoginUrl,
+			dockerUser: this.formatDockerUser(projectName),
+			dockerPassword: this.formatDockerPwd(projectName),
+			gitRepositoryUrl: `${gitHost}/${projectName}.git`,
+			projectName
+		};
+		const filePath = cwd() + `/${repository}/.gitlab-ci.yml`;
+		const shellPath = cwd() + `/${repository}/docker/build/local_build.sh`;
 
-    if (!projectName) {
-      console.log(chalk.red('Error: Can not get projec name'));
-      return;
-    }
-    if (!dockerLoginUrl) {
-      console.log(chalk.red('Error: Can not get docker login url'));
-      return;
-    }
+		render(filePath, data);
+		render(shellPath, { dockerRepositoryUrl });
+	}
 
-    const data = {
-      dockerRepositoryUrl,
-      gitRepositoryUrl,
-      projectName,
-      dockerLoginUrl,
-      dockerUser,
-      dockerPassword,
-    };
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const result = handlebars.compile(content)(data);
-    fs.writeFileSync(filePath, result);
-  }
+	addCommitlint(content: Package): void {
+		content['devDependencies']['@commitlint/cli'] = '^8.2.0';
+		content['devDependencies']['@commitlint/config-conventional'] = '^8.2.0';
+		content.husky.hooks['commit-msg'] = 'commitlint -E HUSKY_GIT_PARAMS';
+	}
 
-  addCommitlint(content: Package): void {
-    content['devDependencies']['@commitlint/cli'] = '^8.2.0';
-    content['devDependencies']['@commitlint/config-angular'] = '^8.2.0';
-    content['dependencies']['husky'] = '^3.1.0';
-    content['dependencies']['lint-staged'] = '^8.2.1';
-    content.husky.hooks['commit-msg'] = 'commitlint -E HUSKY_GIT_PARAMS';
-  }
+	async initGit(projectName: string): Promise<void> {
+		const connector = GeneratorFactory.getInstance('git') as GitGenerator;
+		const project = await connector.initGit(projectName);
 
-  remove(path: string): void {
-    execSync(`rm -rf ${path}`);
-  }
+		this.createVariables(project);
+	}
+
+	formatDockerUser(name: string): string {
+		return name.toUpperCase() + '_USER';
+	}
+
+	formatDockerPwd(name: string): string {
+		return name.toUpperCase() + '_PWD';
+	}
+
+	async createVariables(project: Project): Promise<void> {
+		Creator.detail = project;
+
+		try {
+			gitlabApi.createVariables({
+				id: project.id,
+				key: this.formatDockerUser(project.name),
+				value: docker.user
+			});
+			gitlabApi.createVariables({ id: project.id, key: this.formatDockerPwd(project.name), value: docker.pwd });
+		} catch (err) {
+			throwGitlabError(err);
+			process.exit(1);
+		}
+	}
+
+	async initSonar(name: string): Promise<void> {
+		const sonar = GeneratorFactory.getInstance('sonar') as SonarGenerator;
+		await sonar.run(name);
+	}
+
+	remove(path: string): void {
+		execSync(`rm -rf ${path}`);
+	}
 }

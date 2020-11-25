@@ -3,6 +3,7 @@
     "target": "es5",
     "module": "commonjs",
     "declaration": true,
+    "sourceMap": true,
     "outDir": "./lib",
     "strict": true,
     "lib": ["es6"],
@@ -11,5 +12,3 @@
   "include": ["src"],
   "exclude": ["node_modules"]
 }
-
-
