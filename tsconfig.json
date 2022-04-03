@@ -2,13 +2,37 @@
   "compilerOptions": {
     "target": "es5",
     "module": "commonjs",
+    "baseUrl": "./",
     "declaration": true,
     "sourceMap": true,
     "outDir": "./lib",
     "strict": true,
     "lib": ["es6"],
-    "types": ["node"]
+    "types": ["node", "jest"],
+    "noImplicitAny": true,
+    "paths": {
+      "@api/*": [
+        "src/api/*"
+      ],
+      "@command/*": [
+        "src/command/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ],
+      "@typings/*": [
+        "src/typings/*"
+      ],
+      "@utils/*": [
+        "src/utils/*"
+      ]
+    }
   },
-  "include": ["src"],
-  "exclude": ["node_modules"]
+  "linterOptions": {
+    "exclude": [
+      "node_modules",
+      "lib"
+    ]
+  },
+  "exclude": ["node_modules", "lib"]
 }

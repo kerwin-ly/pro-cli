@@ -1,89 +1,124 @@
 import * as inquirer from 'inquirer';
-import { Answers } from 'inquirer';
 import { get } from 'lodash';
 import * as chalk from 'chalk';
-import { execSync } from 'child_process';
 import * as ora from 'ora';
 import Generator from '../generator';
-import { log, throwGitlabError } from '../../utils/logger';
-import { gitlabApi } from '../../api/gitlab';
-import * as fs from 'fs';
-import { Project } from '../../interface/gitlab-interface';
-import { getDirname, cwd } from '../../utils/file';
+import { error, log, throwGitlabError } from '@utils/logger';
+import { gitlabApi } from '@api/gitlab';
+import * as fse from 'fs-extra';
+import * as path from 'path';
+import { IGitlabProject } from '@typings/gitlab';
+import { cwd, getCurrentPath, getDirname } from '@utils/path';
+import { createVariables, execGitSync, formatDockerPwd, formatDockerUser } from '@utils/git';
+import { recursiveReplace, removeSync } from '@utils/file';
+import { getPkgJson } from '@utils/package';
 
 const prompt = inquirer.createPromptModule();
 const gitProcess = ora('Creating gitlab project...');
 
 class GitGenerator extends Generator {
-  constructor() {
-    super();
-  }
+	constructor() {
+		super();
+	}
 
-  async createPropmts(): Promise<void> {
-    const fileUrl = cwd() + '/.git';
+	async createPropmts(): Promise<void> {
+		const fileUrl = path.join(cwd(), '/.git');
 
-    if (fs.existsSync(fileUrl)) {
-      const answers = await prompt([
-        {
-          type: 'confirm',
-          name: 'isReplace',
-          message: '.git repository already exists, would you like to replace it?',
-          default: false,
-        },
-      ]);
+		if (fse.existsSync(fileUrl)) {
+			const answers = await this.replacePrompt();
+			if (!answers.isReplace) return;
+			removeSync(fileUrl);
+		}
 
-      if (!answers['isReplace']) return;
+		const data = await this.namePrompt();
+		this.updateRepo(data.projectName);
+		this.updateDockerInfo(data.projectName);
+		const project = await this.initGit(data.projectName, false);
 
-      execSync('rm -rf .git');
-    }
+		await createVariables(project);
 
-    prompt([
-      {
-        type: 'input',
-        name: 'projectName',
-        message: 'Input your gitlab repository name',
-        default: getDirname(),
-        validate: (input: string) => {
-          if (input) {
-            return true;
-          }
+		log();
+		log(`${chalk.green('✔')}  Successfully created project in Gitlab`);
+		log(`For more details, visit ${chalk.yellow(project.http_url_to_repo)} `);
+	}
 
-          return 'Please input your gitlab repository name';
-        },
-      },
-    ]).then(async (data: Answers) => {
-      const project = await this.initGit(data.projectName);
+	updateDockerInfo(projectName: string): void {
+		try {
+			const fileUrl = getCurrentPath('./.gitlab-ci.yml');
+			if (!fse.existsSync(fileUrl)) return;
+			const content = fse.readFileSync(fileUrl).toString();
+			const matches = content.match(/(?<=(\-u\s)|(\-p\s))(.*?)(?=\s)/g); // 提取.gitlab-ci.yml中的docker账号，密码
+			const newCont = content
+				.replace(matches![0], '$' + formatDockerUser(projectName))
+				.replace(matches![1], '$' + formatDockerPwd(projectName));
 
-      log();
-      log(`${chalk.green('✔')}  Successfully created project in Gitlab`);
-      log(`For more details, visit ${chalk.yellow(project.http_url_to_repo)} `);
-    });
-  }
+			fse.writeFileSync(fileUrl, newCont);
+			log(`Updated CI/CD variables in ${fileUrl}`);
+		} catch (err) {
+			error('Error: Fail to replace docker user in .gitlab-ci.yml' + err);
+		}
+	}
 
-  async initGit(name: string): Promise<Project> {
-    gitProcess.start();
-    try {
-      const groups = await gitlabApi.getGroups({ owned: true });
-      const data = await gitlabApi.create({
-        name: name,
-        namespace_id: get(groups, '0.id'),
-      });
+	updateRepo(target: string): void {
+		const pkg = getPkgJson();
+		const source = pkg.name;
 
-      execSync('git init');
-      execSync('git add .');
-      execSync('git commit -m "chore(*): init project"');
-      execSync(`git remote add origin ${data.ssh_url_to_repo}`);
-      execSync('git push -u origin master', { stdio: 'ignore' });
-      gitProcess.stop();
+		recursiveReplace({
+			dir: cwd(),
+			from: source,
+			to: target,
+			exclude: ['node_modules', '.git']
+		});
+	}
 
-      return data;
-    } catch (err) {
-      throwGitlabError(err);
-      execSync(`rm -rf ${cwd()}`);
-      gitProcess.stop();
-      process.exit(1);
-    }
-  }
+	async replacePrompt(): Promise<{ isReplace: boolean }> {
+		return prompt([
+			{
+				type: 'confirm',
+				name: 'isReplace',
+				message: '.git repository already exists, would you like to replace it?',
+				default: false
+			}
+		]);
+	}
+
+	async namePrompt(): Promise<{ projectName: string }> {
+		return prompt([
+			{
+				type: 'input',
+				name: 'projectName',
+				message: 'Input your gitlab repository name',
+				default: getDirname(),
+				validate: (input: string) => {
+					if (input) {
+						return true;
+					}
+
+					return 'Please input your gitlab repository name';
+				}
+			}
+		]);
+	}
+
+	async initGit(name: string, isReset = true): Promise<IGitlabProject> {
+		gitProcess.start();
+		try {
+			const groups = await gitlabApi.getGroups({ owned: true });
+			const data = await gitlabApi.create({
+				name: name,
+				namespace_id: get(groups, '0.id')
+			});
+			execGitSync(data.ssh_url_to_repo);
+			gitProcess.stop();
+
+			return data;
+		} catch (err) {
+			throwGitlabError(err);
+			isReset && removeSync(cwd());
+			gitProcess.stop();
+			process.exit(1);
+		}
+	}
 }
 
 export default GitGenerator;

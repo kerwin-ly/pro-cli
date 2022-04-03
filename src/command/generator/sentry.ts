@@ -1,15 +1,16 @@
 import Generator from '../generator';
-import { execSync } from 'child_process';
 import * as chalk from 'chalk';
-import { downloadTmpFromLocal, getDirname, render, cwd } from '../../utils/file';
-import { error, log, warn } from '../../utils/logger';
-import { install } from '../../utils/packageManager';
-import { sentryApi } from '../../api/sentry';
+import { error, log } from '@utils/logger';
+import { sentryApi } from '@api/sentry';
 import * as inquirer from 'inquirer';
-import { sentryToken } from '../../config/constant';
-import * as fs from 'fs-extra';
+import { SENTRY_TOKEN, FRONTEND_GROUP } from '@config/constant';
+import { getDirname, cwd } from '@utils/path';
+import { registerToNgModule } from '@utils/ast';
+import { renderSentryTmp, installSentry } from '@utils/sentry';
 
 const prompt = inquirer.createPromptModule();
+const wikiDetailLink = 'http://wiki.company.com/pages/viewpage.action?pageId=3147181';
+const sentryLink = 'http://starport.company.com/starport/';
 
 class SentryGenerator extends Generator {
 	constructor() {
@@ -17,7 +18,7 @@ class SentryGenerator extends Generator {
 	}
 
 	async createPrompt(): Promise<void> {
-		const answers = await prompt([
+		const answers = (await prompt([
 			{
 				type: 'input',
 				name: 'name',
@@ -31,51 +32,27 @@ class SentryGenerator extends Generator {
 					return true;
 				}
 			}
-		]);
+		])) as inquirer.Answers;
 
 		this.run(answers);
 	}
 
 	async run(answers: inquirer.Answers): Promise<void> {
-		this.installSentry();
+		installSentry();
 		this.addSentrySDK(answers.name);
 		await this.createSentryProject(answers.name);
 		this.importSentry();
-		this.addScriptShell();
 		log();
-		log(`See ${chalk.yellow('http://wiki.company.com/pages/viewpage.action?pageId=3147181')} to get more details`);
+		log(`See ${wikiDetailLink} to get more details`);
 	}
 
-	installSentry() {
-		try {
-			execSync('sentry-cli --version', { stdio: 'ignore' });
-		} catch (error) {
-			execSync('npm install -g @sentry/cli', { stdio: 'inherit' }); // 如果没有安装sentry/cl，首先全局安装
-		}
-
-		!require(cwd() + '/package.json')['dependencies']['@sentry/browser'] &&
-			install({
-				dependencies: ['@sentry/browser']
-			});
-	}
-
-	addSentrySDK(projectName: string) {
-		try {
-			downloadTmpFromLocal('templates/tools/sentry/sentry-upload.sh', `${cwd()}/scripts/sentry-upload.sh`);
-			const data = {
-				authToken: sentryToken,
-				projectName
-			};
-			render(`${cwd()}/scripts/sentry-upload.sh`, data);
-			downloadTmpFromLocal(
-				'templates/tools/sentry/sentry.service.ts',
-				`${cwd()}/src/app/core/sentry/sentry.service.ts`
-			);
-			downloadTmpFromLocal('templates/tools/sentry/index.ts', `${cwd()}/src/app/core/sentry/index.ts`);
-			log(`${chalk.green('✔')}  Successfully added Sentry SDK`);
-		} catch (err) {
-			throw new Error('Error: Download template failed ' + err);
-		}
+	addSentrySDK(projectName: string): void {
+		const data = {
+			authToken: SENTRY_TOKEN,
+			projectName
+		};
+		renderSentryTmp(data);
+		log(`${chalk.green('✔')}  Successfully added Sentry SDK`);
 	}
 
 	async createSentryProject(name: string): Promise<void> {
@@ -83,12 +60,10 @@ class SentryGenerator extends Generator {
 			const project = await sentryApi.createProject({
 				name,
 				platform: '',
-				team: 'poc_frontend'
+				team: FRONTEND_GROUP
 			});
 			log(
-				`${chalk.green('✔')}  Successfully created sentry project at ${chalk.yellow(
-					'http://starport.company.com/starport/' + project.name + '/'
-				)}`
+				`${chalk.green('✔')}  Successfully created sentry project at ${chalk.yellow(sentryLink + project.name + '/')}`
 			);
 		} catch (err) {
 			if (err.detail) {
@@ -100,25 +75,16 @@ class SentryGenerator extends Generator {
 	}
 
 	importSentry(): void {
-		const sharedPath = cwd() + '/src/app/shared/shared.module.ts';
-		const data = fs.readFileSync(sharedPath, 'utf-8').toString();
+		const targetFile = cwd() + '/src/app/app.module.ts';
 
-		if (/SENTRY_PROVIDERS/.test(data)) return;
-		const result = data.replace(/providers\:\ \[/i, `providers: [SENTRY_PROVIDERS, `);
-
-		fs.writeFileSync(sharedPath, `import { SENTRY_PROVIDERS } from '@core/sentry';\n${result}`);
+		registerToNgModule(targetFile, {
+			moduleName: 'SENTRY_PROVIDERS',
+			modulePath: '@core/sentry',
+			propertyKey: 'providers',
+			propertyValue: 'SENTRY_PROVIDERS',
+			importType: 'ImportDefaultSpecifier'
+		});
 		log(`${chalk.green('✔')}  Successfully imported Sentry`);
-	}
-
-	addScriptShell(): void {
-		const json = require(cwd() + '/package.json');
-
-		json['scripts']['sentry'] =
-			'npm run color-less && node --max_old_space_size=8192 node_modules/@angular/cli/bin/ng build --prod --source-map=true && sh scripts/sentry-upload.sh';
-		fs.writeFileSync(cwd() + '/package.json', JSON.stringify(json, null, '\t'));
-		log();
-		log('👉  To release a new package, in one tab, run:');
-		log(`$ ${chalk.cyan('npm run sentry')}`);
 	}
 }
 

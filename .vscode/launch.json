@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "cli-debug",
+      "type": "node",
+      "request": "launch",
+      "trace": "verboser",
+      "program": "${workspaceFolder}/lib/main.js",
+      "args": [
+        "--loader",
+        "ts-loader"
+      ]
+    }
+  ]
+}

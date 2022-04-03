@@ -1,0 +1,25 @@
+deploy_branch=$1
+stack_name=$2
+repo=$3
+image_tag=$4
+project_name=$5
+host_addr=$6
+
+set -o errexit
+echo "Start deploy to ${stack_name}."
+ssh -f -p 58422 -4 -o "StrictHostKeyChecking no" ci_test@jumper-huabei2-vpc.company.com -L $PORT:$host_addr:22 -N
+cd $DEPLOY_ADDR
+sed -i "s/\(dockerhub.company.com\/\)\(.*\)\(\/nlp_platform_html_xhcj:\)\(.*\)/dockerhub.company.com\/nlp_platform\/nlp_platform_html_xhcj:${image_tag}/g" docker-compose.yml
+{{!-- cd $ROOT_PATH
+mkdir ${stack_name}_deploy && cd ${stack_name}_deploy
+git clone --depth=1 --single-branch -b $deploy_branch ssh://git@git.company.com:58422/Data_BJ/xhcj/nlp_platform/deploy_nlp_platform.git
+cd $DEPLOYMENT_REPO_NAME
+git config --local user.email "${GITLAB_USER_EMAIL}"
+git config --local user.name "${GITLAB_USER_NAME}"
+sed -i "s/\(dockerhub.company.com\/\)\(.*\)\(\/nlp_platform_html_xhcj:\)\(.*\)/dockerhub.company.com\/nlp_platform\/nlp_platform_html_xhcj:${image_tag}/g" docker-compose.yml
+git add docker-compose.yml
+git commit -m "${COMMIT_MESSAGE}"
+git push --}}
+cmd="docker service update --image=${repo}:${image_tag} ${stack_name}_${project_name}"
+echo $cmd
+ssh -o "StrictHostKeyChecking no" $USER@$SERVER -p $PORT $cmd

@@ -1,17 +1,17 @@
 import Api from './api';
 import { AxiosRequestConfig } from 'axios';
-import { sentryToken, sentryApiAddress } from '../config/constant';
+import { SENTRY_TOKEN } from '@config/constant';
 import { PathLike } from 'fs';
 import * as qs from 'qs';
-import { CreateParams, Project } from '../interface/sentry-interface';
+import { ISentryCreateParams, ISentryProject } from '@typings/sentry';
 
 const sentryConfig = {
 	returnRejectedPromiseOnError: true,
 	withCredentials: true,
 	timeout: 30000,
-	baseURL: sentryApiAddress,
+	baseURL: 'http://starport.company.com/api/0/',
 	headers: {
-		Authorization: `Bearer ${sentryToken}`,
+		Authorization: `Bearer ${SENTRY_TOKEN}`,
 		common: {
 			'Cache-Control': 'no-cache, no-store, must-revalidate',
 			Pragma: 'no-cache',
@@ -27,8 +27,8 @@ class SentryApi extends Api {
 		super(config);
 	}
 
-	createProject(params: CreateParams): Promise<Project> {
-		return this.post<Project, CreateParams>(`teams/starport/${params.team}/projects/`, params);
+	createProject(params: ISentryCreateParams): Promise<ISentryProject> {
+		return this.post<ISentryProject, ISentryCreateParams>(`teams/starport/${params.team}/projects/`, params);
 	}
 }
 

@@ -1,0 +1,62 @@
+stages:
+  - build_dev
+  - publish_dev
+
+# cache:
+#   key: ${CI_COMMIT_REF_NAME}
+#   paths:
+#   - node_modules/
+
+variables:
+  GIT_STRATEGY: none
+  DEV_TAG: dev
+  PROD_TAG: prod
+  REPO: {{ dockerRepositoryUrl }} # docker镜像地址
+  GIT_PROJECT_ADDRESS: {{ gitRepositoryUrl }} # 项目地址，如：ssh://git@git.xxx.com:40001/group/myProject.git
+  PROJECT_REPO_NAME: {{ projectName }} # 项目名，如：myProject
+  {{#if cd}}
+  DEPLOY_ADDR: {{ deployAddr }}
+  DEPLOY_STACK_NAME: {{ deployStackName }}
+  HOST_ADDR: {{ hostAddr }}
+  PORT: {{ hostPort }}
+  USER: {{ hostUser }}
+  {{/if}}
+
+before_script:
+  - docker login -u ${{ dockerUser }} -p ${{ dockerPassword }} {{ dockerLoginUrl }} # 对应项目CI/CD的settings中Secret variables添加DOCKER_USER, DOCKER_PWD变量，并确保变量名唯一。
+  - git clone -b $CI_COMMIT_REF_NAME --depth=1 $GIT_PROJECT_ADDRESS
+  - cd $PROJECT_REPO_NAME
+  - export DATE=$(git log -1 --pretty=format:"%ad" --date=format:'%Y%m%d' $CI_COMMIT_SHA)
+  - echo 'date:' $DATE
+  - export DOCKER_TAG_SUFFIX="ci"_$DATE"_"${CI_COMMIT_SHA:0:7}
+  - echo 'docker tag suffix:' $DOCKER_TAG_SUFFIX
+
+# lint -> build dev
+build_dev:
+  stage: build_dev
+  script:
+    - sh build/build.sh $REPO $DOCKER_TAG_SUFFIX $BUILD_COMMAND
+  allow_failure: false
+
+# lint -> publish dev
+publish_dev:
+  stage: publish_dev
+  when: manual
+  script:
+    - sh build/publish.sh $REPO $DOCKER_TAG_SUFFIX
+  allow_failure: true
+  dependencies:
+    - build_dev
+
+{{#if cd}}
+deploy_dev:
+  stage: deploy_dev
+  script:
+    - sh build/deploy.sh $DEPLOYMENT_REPO_BRANCH $DEPLOY_STACK_NAME $REPO $DOCKER_TAG_SUFFIX ${PROJECT_REPO_NAME} ${HOST_ADDR}
+  when: manual
+  only:
+    - master
+  allow_failure: false
+  dependencies:
+    - publish_dev
+{{/if}}

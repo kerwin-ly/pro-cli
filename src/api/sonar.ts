@@ -1,15 +1,15 @@
 import Api from './api';
 import { AxiosRequestConfig } from 'axios';
-import { SonarProject, ProjectParams } from '../interface/sonar-interface';
 import { PathLike } from 'fs';
 import * as qs from 'qs';
-import { sonarToken, sonarApiAddress } from '../config/constant';
+import { SONAR_TOKEN } from '@config/constant';
+import { ISonarProjectParams, ISonarProject } from '@typings/sonar';
 
 const sonarConfig = {
 	returnRejectedPromiseOnError: true,
 	withCredentials: true,
 	timeout: 30000,
-	baseURL: sonarApiAddress,
+	baseURL: 'http://sonarqube.company.com/api/',
 	headers: {
 		common: {
 			'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -21,7 +21,7 @@ const sonarConfig = {
 	},
 	paramsSerializer: (params: PathLike) => qs.stringify(params, { indices: false }),
 	auth: {
-		username: sonarToken,
+		username: SONAR_TOKEN,
 		password: ''
 	}
 } as AxiosRequestConfig;
@@ -31,10 +31,10 @@ class SonarApi extends Api {
 		super(config);
 	}
 
-	createProject(params: ProjectParams): Promise<SonarProject> {
+	createProject(params: ISonarProjectParams): Promise<ISonarProject> {
 		const data = qs.stringify(params);
 
-		return this.post<SonarProject, string>('projects/create', data);
+		return this.post<ISonarProject, string>('projects/create', data);
 	}
 }
 

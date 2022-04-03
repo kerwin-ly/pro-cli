@@ -1,9 +1,9 @@
-import * as path from 'path';
-import { gitlabApi } from '../api/gitlab';
-import { cliRepo } from '../config/constant';
+import { gitlabApi } from '@api/gitlab';
+import { GITLAB_REPO_ID, GITLAB_USER_ID } from '@config/constant';
 import { execSync } from 'child_process';
-import { throwGitlabError, log, error } from '../utils/logger';
+import { throwGitlabError, log } from '@utils/logger';
 import chalk = require('chalk');
+import { getCliPkgJson } from '@utils/package';
 
 class Upgrader {
 	constructor() {}
@@ -19,15 +19,15 @@ class Upgrader {
 	}
 
 	/**
-	 * get dg-cli released tags
+	 * get pro-cli released tags
 	 * @returns {Promise<string[]>}
 	 * @memberof Upgrader
 	 */
 	async getTagList(): Promise<string[]> {
 		try {
 			const tags = await gitlabApi.getTags({
-				projectId: cliRepo.projectId,
-				id: cliRepo.userId,
+				projectId: GITLAB_REPO_ID,
+				id: GITLAB_USER_ID,
 				order_by: 'updated'
 			});
 			return tags.map((item) => item.name);
@@ -41,7 +41,7 @@ class Upgrader {
 		if (!tagList.includes(version)) {
 			log(
 				`The version does not exist, you can see ${chalk.yellow(
-					'https://git.company.com/web/dg-cli/tags'
+					'https://git.company.com/frontend_utils/pro-cli/tags'
 				)} to get released tags`
 			);
 			return;
@@ -50,8 +50,8 @@ class Upgrader {
 	}
 
 	upgradeToLatest(latestVersion: string): void {
-		const packageJson = require(path.join(__dirname, '../../package.json'));
-		const installed = packageJson.version;
+		const pkg = getCliPkgJson();
+		const installed = pkg.version;
 
 		if (installed === latestVersion) {
 			log(`You have installed the latest version ${installed}`);
@@ -61,7 +61,7 @@ class Upgrader {
 	}
 
 	installPkg(tag: string): void {
-		execSync(`npm install -g dg-cli@git+ssh://git@git.company.com:58422/web/dg-cli.git#${tag}`, {
+		execSync(`npm install -g pro-cli@git+ssh://git@git.company.com:58422/frontend_utils/pro-cli.git#${tag}`, {
 			stdio: 'inherit'
 		});
 	}

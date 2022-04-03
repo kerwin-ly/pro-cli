@@ -67,6 +67,8 @@
 		"no-output-rename": false,
 		"no-access-missing-member": false,
 		"templates-use-public": false,
-		"invoke-injectable": false
+		"invoke-injectable": false,
+		"indent": false,
+		"no-non-null-assertion": false
 	}
 }

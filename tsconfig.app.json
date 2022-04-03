@@ -6,9 +6,6 @@
       "node"
     ]
   },
-  "files": [
-    "src/bin/main.ts"
-  ],
   "include": [
     "src/**/*.ts"
   ],

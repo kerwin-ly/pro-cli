@@ -1,36 +1,41 @@
 {
-	"name": "dg-cli",
-	"version": "2.0.4",
-	"description": "dg-cli",
-	"main": "index.js",
+	"name": "pro-cli",
+	"version": "3.2.2",
+	"description": "pro-cli",
+	"main": "./bin/cli.js",
 	"scripts": {
-		"dev": "rm -rf ./lib && tsc -p tsconfig.json && npm link && sh ./shells/dev.sh",
-		"build": "rm -rf ./lib && tsc -p tsconfig.json && sh ./shells/prod.sh",
+		"ts": "tsc -p tsconfig.json",
+		"dev": "webpack --config build/webpack.dev.conf.js --watch",
+		"cli-link": "sh ./scripts/link.sh",
+		"build": "webpack --config build/webpack.prod.conf.js",
 		"lint:ts": "tslint --force -p tsconfig.app.json -c tslint.json 'src/**/*.ts'",
-		"changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -p"
+		"changelog": "conventional-changelog -p angular -i CHANGELOG.md -s -p",
+		"test": "jest"
 	},
 	"bin": {
-		"dg-cli": "./lib/bin/main.js"
+		"pro-cli": "./bin/cli.js"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/kerwin-ly/dg-cli.git"
+		"url": "git+https://github.com/kerwin-ly/pro-cli.git"
 	},
 	"author": "",
 	"license": "ISC",
 	"bugs": {
-		"url": "https://github.com/kerwin-ly/dg-cli/issues"
+		"url": "https://github.com/kerwin-ly/pro-cli/issues"
 	},
-	"homepage": "https://github.com/kerwin-ly/dg-cli#readme",
+	"homepage": "https://github.com/kerwin-ly/pro-cli#readme",
 	"keywords": [
-		"angular",
-		"ng-alain",
 		"cli",
 		"dg",
-		"template",
-		"custom http interceptor"
+		"template"
 	],
 	"dependencies": {
+		"@babel/core": "^7.12.10",
+		"@babel/generator": "^7.12.10",
+		"@babel/parser": "^7.12.10",
+		"@babel/traverse": "^7.12.10",
+		"@babel/types": "^7.12.10",
 		"axios": "^0.19.2",
 		"chalk": "^4.0.0",
 		"commander": "^5.1.0",
@@ -40,34 +45,47 @@
 		"lodash": "^4.17.15",
 		"ora": "^4.0.3",
 		"qs": "^6.9.4",
-		"rxjs": "^6.5.5"
+		"rxjs": "^6.5.5",
+		"semver": "^6.3.0"
 	},
 	"devDependencies": {
 		"@commitlint/cli": "^8.3.5",
 		"@commitlint/config-conventional": "^8.3.4",
 		"@types/fs-extra": "^8.1.0",
 		"@types/inquirer": "^6.5.0",
+		"@types/jest": "^26.0.24",
 		"@types/lodash": "^4.14.149",
 		"@types/mem-fs-editor": "^5.1.1",
 		"@types/node": "^13.9.8",
 		"@types/qs": "^6.9.3",
+		"@types/semver": "^7.3.7",
+		"clean-webpack-plugin": "^4.0.0-alpha.0",
 		"codelyzer": "^5.2.2",
+		"copy-webpack-plugin": "^9.0.0",
 		"editorconfig-tools": "^0.1.1",
 		"husky": "^4.2.5",
+		"jest": "^27.0.6",
 		"lint-staged": "^10.2.4",
 		"prettier": "^2.0.2",
-		"ts-node": "^8.8.1",
+		"sinon": "^11.1.2",
+		"ts-jest": "^27.0.4",
+		"ts-loader": "^9.2.3",
+		"ts-node": "^10.2.0",
 		"tslint": "^6.1.1",
 		"tslint-config-prettier": "^1.18.0",
-		"typescript": "^3.8.3"
+		"typescript": "^3.8.3",
+		"webpack": "^5.40.0",
+		"webpack-cli": "^4.7.2",
+		"webpack-merge": "^5.8.0",
+		"webpack-node-externals": "^3.0.0"
 	},
-	"files": [
-		"lib/**/*"
-	],
 	"husky": {
 		"hooks": {
 			"pre-commit": "lint-staged",
 			"commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
 		}
+	},
+	"engines": {
+		"node": "^12.0.0 || ^13.0.0 || ^14.0.0"
 	}
 }

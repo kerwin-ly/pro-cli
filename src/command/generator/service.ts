@@ -1,15 +1,15 @@
 import Generator from '../generator';
-import { error, log } from '../../utils/logger';
-import * as fs from 'fs-extra';
-import { install } from '../../utils/packageManager';
+import { error, log, warn } from '@utils/logger';
+import * as fse from 'fs-extra';
+import { getPkgJson, install, setPkgJson } from '@utils/package';
 import { get } from 'lodash';
 import { execSync } from 'child_process';
 import * as chalk from 'chalk';
-import { yApi } from '../../api/yapi';
-import { yapi as yapiConfig } from '../../config/constant';
-import { Swagger } from '../../interface/yapi-interface';
+import { yApi } from '@api/yapi';
+import { NG_SWAGGER_GEN_VER, NG_GEN_LIBRARY, YAPI_EMAIL, YAPI_PWD } from '@config/constant';
 import * as inquirer from 'inquirer';
-import { cwd } from 'process';
+import { getCurrentPath } from '@utils/path';
+import { IYapiSwagger } from '@typings/yapi';
 
 interface Tag {
 	name: string;
@@ -19,7 +19,7 @@ interface Tag {
 const prompt = inquirer.createPromptModule();
 
 class ServiceGenerator extends Generator {
-	swaggerJson: Swagger;
+	swaggerJson: IYapiSwagger;
 	interfaces: string[];
 	interfaceName: string;
 	isReq = true;
@@ -29,21 +29,22 @@ class ServiceGenerator extends Generator {
 		super();
 		this.interfaces = [];
 		this.interfaceName = '';
-		this.swaggerJson = {} as Swagger;
+		this.swaggerJson = {} as IYapiSwagger;
 		this.tag = '';
 	}
 
 	async createPrompt(): Promise<void> {
-		const reg = /http\:\/\/yapi\.company\.com\/project\/(\d+)\/interface\/api/;
-		const answers = await prompt([
+		const reg = /yapi\.company\.com\/project\/(\d+)\/interface\/api/;
+		const pkg = getPkgJson();
+		const answers = (await prompt([
 			{
 				type: 'input',
 				name: 'address',
-				message: 'Input the project address in yApi(e.g. http://yapi.company.com/project/xxx/interface/api)',
-				default: get(require(cwd() + '/package.json'), 'config.yapi') || null,
+				message: 'Input the project address in yApi(e.g. https://yapi.company.com/project/xxx/interface/api)',
+				default: get(pkg, 'config.yapi') || null,
 				validate: (input: string) => {
 					if (!reg.test(input)) {
-						return 'Please input the correct api address.(e.g. http://yapi.company.com/project/23/interface/api)';
+						return 'Please input the correct api address.(e.g. https://yapi.company.com/project/23/interface/api)';
 					}
 
 					return true;
@@ -53,7 +54,7 @@ class ServiceGenerator extends Generator {
 				type: 'input',
 				name: 'output',
 				message: 'Which path would you like to output',
-				default: 'src/app/api',
+				default: 'src/api',
 				validate: (input: string) => {
 					if (!input) {
 						return 'Please input the output path';
@@ -62,7 +63,7 @@ class ServiceGenerator extends Generator {
 					return true;
 				}
 			}
-		]);
+		])) as inquirer.Answers;
 		const matches = answers.address.match(reg);
 
 		if (!matches) {
@@ -74,19 +75,38 @@ class ServiceGenerator extends Generator {
 		this.run(projectId, answers);
 	}
 
-	async run(projectId: string, answers: inquirer.Answers) {
-		const swaggerAddress = cwd() + '/swaggerApi.json';
-		await this.downloadSwaggerJson(projectId, swaggerAddress);
-		const swaggerJson = require(swaggerAddress);
+	getSwaggerJson(swaggerJsonUrl: string) {
+		return fse.readJsonSync(swaggerJsonUrl);
+	}
 
+	async run(projectId: string, answers: inquirer.Answers) {
+		const swaggerAddress = getCurrentPath('./swaggerApi.json');
+		await this.downloadSwaggerJson(projectId, swaggerAddress);
+		const swaggerJson = this.getSwaggerJson(swaggerAddress);
 		if (this.hasChinese(swaggerJson.tags)) {
 			error('Error: Tags should be english in yapi');
 			return;
 		}
 		this.installPackages();
 		this.generateService(answers.output);
-		this.importApiModule();
+		this.ignoreLint(answers.output);
 		this.saveApiAddress(answers.address);
+	}
+
+	// 修改项目.eslintignore，忽略对生成代码的校验
+	ignoreLint(output: string): void {
+		const eslintIgnoreAddr = getCurrentPath('./.eslintignore');
+		if (!fse.existsSync(eslintIgnoreAddr)) {
+			return;
+		}
+
+		const content = fse.readFileSync(eslintIgnoreAddr);
+		if (content.includes(output)) {
+			return;
+		}
+
+		const newContent = content + '\n' + output;
+		fse.writeFileSync(eslintIgnoreAddr, newContent);
 	}
 
 	/**
@@ -104,7 +124,7 @@ class ServiceGenerator extends Generator {
 
 	async downloadSwaggerJson(projectId: string, localAddress: string): Promise<void> {
 		try {
-			const user = await yApi.login({ email: yapiConfig.email, password: yapiConfig.password });
+			const user = await yApi.login({ email: YAPI_EMAIL, password: YAPI_PWD });
 
 			if (user.errcode && user.errcode !== 0) {
 				error('Error: ' + user.errmsg);
@@ -125,7 +145,7 @@ class ServiceGenerator extends Generator {
 				}
 				process.exit(1);
 			}
-			fs.writeFileSync(localAddress, JSON.stringify(swagger, null, '\t'));
+			fse.writeFileSync(localAddress, JSON.stringify(swagger, null, '\t'));
 			log(`${chalk.green('✔')}  Successfully created swaggerApi.json in the root directory`);
 		} catch (err) {
 			throw err;
@@ -133,15 +153,26 @@ class ServiceGenerator extends Generator {
 	}
 
 	installPackages(): void {
-		const packageJson = require(cwd() + '/package.json');
+		const pkg = getPkgJson();
+		const library = pkg['devDependencies']['cli-yapi-gen'];
 
-		if (packageJson['devDependencies']['ng-swagger-gen']) return;
-		install({
-			devDependencies: ['ng-swagger-gen@git+ssh://git@git.company.com:58422/liyi/ng-swagger-gen.git#0.1.3']
-		});
+		if (!library) {
+			install({
+				devDependencies: [NG_GEN_LIBRARY]
+			});
+			return;
+		}
+		const localVersion = library.split('#')[1];
+		if (localVersion !== NG_SWAGGER_GEN_VER) {
+			warn(
+				`The latest version of ng-swaggger-gen is ${chalk.bold.cyan(NG_SWAGGER_GEN_VER)}. Run: ${chalk.cyan(
+					`yarn add ${NG_GEN_LIBRARY}`
+				)} to upgrade it.`
+			);
+		}
 	}
 
-	generateDefinations(json: Swagger): void {
+	generateDefinations(json: IYapiSwagger): void {
 		const tags = json.tags;
 		const definition = {} as any;
 
@@ -163,37 +194,21 @@ class ServiceGenerator extends Generator {
 
 	generateService(output: string): void {
 		try {
-			execSync(`node_modules/.bin/ng-swagger-gen -i ./swaggerApi.json -o ${output}`, { stdio: 'inherit' });
+			execSync(`node_modules/.bin/cli-yapi-gen -i ./swaggerApi.json -o ${output}`, { stdio: 'inherit' });
 			log(`${chalk.green('✔')}  Successfully generated api services`);
 		} catch (err) {
-			throw new Error('Fail to generate service by ng-swagger-gen ' + err);
-		}
-	}
-
-	importApiModule(): void {
-		try {
-			const appPath = cwd() + '/src/app/app.module.ts';
-			const data = fs.readFileSync(appPath, 'utf-8').toString();
-
-			if (/ApiModule\.forRoot/.test(data)) return;
-			const result = data.replace(/(imports\:\ \[)/i, `imports: [\n ApiModule.forRoot({ rootUrl: '.' }),`);
-
-			fs.writeFileSync(appPath, `import { ApiModule } from './api/api.module';\n${result}`);
-			log(`${chalk.green('✔')}  Successfully imported apiModule.ts in app.module.ts`);
-		} catch (err) {
-			throw new Error('Fail to import apiModule.ts ' + err);
+			throw new Error('Fail to generate service by cli-yapi-gen ' + err);
 		}
 	}
 
 	saveApiAddress(address: string): void {
-		const json = require(cwd() + '/package.json');
+		const pkg = getPkgJson();
 
-		if (json['config']['yapi']) return;
-		json['config'] = Object.assign({}, json['config'], {
+		if (get(pkg, 'config.yapi')) return;
+		pkg.config = Object.assign({}, pkg['config'], {
 			yapi: address
 		});
-
-		fs.writeFileSync(cwd() + '/package.json', JSON.stringify(json, null, '\t'));
+		setPkgJson(pkg);
 	}
 }
 

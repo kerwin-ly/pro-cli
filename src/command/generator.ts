@@ -9,39 +9,39 @@ import ServiceGenerator from './generator/service';
 const prompt = inquirer.createPromptModule();
 
 export default class Generator {
-  protected type: string;
+	protected type: string;
 
-  constructor() {
-    this.type = '';
-  }
+	constructor() {
+		this.type = '';
+	}
 
-  init(): void {
-    prompt([
-      {
-        type: 'list',
-        name: 'type',
-        message: 'Select a tool to generate',
-        choices: ['git', 'sonar', 'sentry', 'api'],
-        default: 'git',
-      },
-    ]).then((data: Answers) => {
-      switch (data.type) {
-        case 'git':
-          const gitInstance = GeneratorFactory.getInstance('git') as GitGenerator;
-          gitInstance.createPropmts();
-          break;
-        case 'sonar':
-          const sonarInstance = GeneratorFactory.getInstance('sonar') as SonarGenerator;
-          sonarInstance.createPrompt();
-          break;
-        case 'sentry':
-          const sentryInstance = GeneratorFactory.getInstance('sentry') as SentryGenerator;
-          sentryInstance.createPrompt();
-          break;
-        case 'api':
-          const serviceInstance = GeneratorFactory.getInstance('service') as ServiceGenerator;
-          serviceInstance.createPrompt();
-      }
-    });
-  }
+	init(): void {
+		prompt([
+			{
+				type: 'list',
+				name: 'type',
+				message: 'Select a tool to generate',
+				choices: ['git', 'sonar', 'api'],
+				default: 'git'
+			}
+		]).then((data: Answers) => {
+			switch (data.type) {
+				case 'git':
+					const gitInstance = GeneratorFactory.getInstance('git') as GitGenerator;
+					gitInstance.createPropmts();
+					break;
+				case 'sonar':
+					const sonarInstance = GeneratorFactory.getInstance('sonar') as SonarGenerator;
+					sonarInstance.createPrompt();
+					break;
+				case 'sentry':
+					const sentryInstance = GeneratorFactory.getInstance('sentry') as SentryGenerator;
+					sentryInstance.createPrompt();
+					break;
+				case 'api':
+					const serviceInstance = GeneratorFactory.getInstance('service') as ServiceGenerator;
+					serviceInstance.createPrompt();
+			}
+		});
+	}
 }

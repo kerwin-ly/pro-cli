@@ -1,41 +1,35 @@
-import { get } from 'lodash';
-
-const templateUrl = 'ssh://git@git.company.com:58422/web/dg-cli-template.git';
-const repository = get(templateUrl.match(/(?<=\/)[^\/]+(?=\.git)/), '0');
-const token = '';
-const docker = {
-	user: '',
-	pwd: ''
-};
-const sonarToken = '';
-const yapi = {
-	email: '',
-	password: ''
-};
-const sentryToken = '';
-const cliRepo = {
-	// cli仓库信息，用于升级使用
-	projectId: '', // gitlab dg-cli projectId
-	userId: '' // userId
-};
-const gitHost = 'ssh://git@git.company.com:58422/frontend_poc';
-const gitlabApiAddress = 'https://git.company.com/api/v4/';
-const sentryApiAddress = 'http://starport.company.com/api/0/';
-const sonarApiAddress = 'http://sonarqube.company.com/api/';
-const yapiApiAddress = 'http://yapi.company.com/api/';
+const REPOSITORY = 'pro-cli-template';
+const TEMPLATE_ADDRESS = `ssh://git@git.company.com/${REPOSITORY}.git`;
+const GIT_TOKEN = '';
+const SONAR_TOKEN = '';
+const SENTRY_TOKEN = '';
+const FRONTEND_REPO = 'ssh://git@git.company.com/repo';
+const FRONTEND_GROUP = 'repo';
+const CLI_TEMPLATE_VER = '';
+const NG_SWAGGER_GEN_VER = '';
+const NG_GEN_LIBRARY = '';
+const GITLAB_REPO_ID = 0;
+const GITLAB_USER_ID = 0;
+const YAPI_EMAIL = '';
+const YAPI_PWD = '';
+const DOCKER_USER = '';
+const DOCKER_PWD = '';
 
 export {
-	templateUrl,
-	repository,
-	token,
-	docker,
-	sonarToken,
-	yapi,
-	sentryToken,
-	cliRepo,
-	gitHost,
-	gitlabApiAddress,
-	sentryApiAddress,
-	sonarApiAddress,
-	yapiApiAddress
+	TEMPLATE_ADDRESS,
+	REPOSITORY,
+	GIT_TOKEN,
+	DOCKER_USER,
+	DOCKER_PWD,
+	SONAR_TOKEN,
+	YAPI_EMAIL,
+	YAPI_PWD,
+	SENTRY_TOKEN,
+	GITLAB_REPO_ID,
+	GITLAB_USER_ID,
+	FRONTEND_REPO,
+	FRONTEND_GROUP,
+	CLI_TEMPLATE_VER,
+	NG_SWAGGER_GEN_VER,
+	NG_GEN_LIBRARY
 };

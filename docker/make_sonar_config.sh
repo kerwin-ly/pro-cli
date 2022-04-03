@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 echo "# SonarQube config
-sonar.projectKey=dg-cli
-sonar.projectName=dg-cli
+sonar.projectKey=pro-cli
+sonar.projectName=pro-cli
 sonar.sourceEncoding=UTF-8
 sonar.sources=src
 sonar.exclusions=**/node_modules/**,**/*.spec.ts,**/*.html

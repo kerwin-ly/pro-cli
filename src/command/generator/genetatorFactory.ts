@@ -2,7 +2,7 @@ import GitGenerator from './git';
 import ToolGenerator from './sentry';
 import SonarGenerator from './sonar';
 import SentryGenerator from './sentry';
-import { error } from '../../utils/logger';
+import { error } from '@utils/logger';
 import ServiceGenerator from './service';
 
 export class GeneratorFactory {

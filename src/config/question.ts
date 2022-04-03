@@ -26,7 +26,7 @@ function initQuestions(name: string): Answers {
 			type: 'input',
 			name: 'description',
 			message: 'Input your project descriptions',
-			default: 'An angular project'
+			default: 'A react project'
 		},
 		{
 			type: 'confirm',

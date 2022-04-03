@@ -1,0 +1,12 @@
+sonar:
+  image: dockerhub.company.com/ci_runner/frontend_web:12.17
+  stage: sonar
+  script:
+    - yarn
+    - sh build/sonar.sh
+    - cat sonar-project.properties
+    - sonar-scanner
+  allow_failure: false
+  only:
+    - develop
+    - master

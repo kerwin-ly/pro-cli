@@ -2,16 +2,15 @@ import Api from './api';
 import { AxiosRequestConfig, AxiosResponse } from 'axios';
 import * as qs from 'qs';
 import { PathLike } from 'fs';
-import { YapiUser, YapiRes, LoginParams, ExportSwaggerParams, Swagger } from '../interface/yapi-interface';
+import { IYapiUser, IYapiRes, IYapiLoginParams, IYapiExportSwaggerParams, IYapiSwagger } from '@typings/yapi';
 import axios from 'axios';
 import { uniq } from 'lodash';
-import { yapiApiAddress } from '../config/constant';
 
 export const yapiConfig = {
 	returnRejectedPromiseOnError: true,
 	withCredentials: true,
 	timeout: 30000,
-	baseURL: yapiApiAddress,
+	baseURL: 'https://yapi.company.com/api/',
 	headers: {
 		common: {
 			'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -49,12 +48,12 @@ class YApi extends Api {
 		);
 	}
 
-	login(params: LoginParams): Promise<YapiRes<YapiUser>> {
-		return this.post<YapiRes<YapiUser>, LoginParams>('user/login', params);
+	login(params: IYapiLoginParams): Promise<IYapiRes<IYapiUser>> {
+		return this.post<IYapiRes<IYapiUser>, IYapiLoginParams>('user/login', params);
 	}
 
-	getSwaggerJson(params: ExportSwaggerParams): Promise<Swagger> {
-		return this.get<Swagger>('plugin/exportSwagger', {
+	getSwaggerJson(params: IYapiExportSwaggerParams): Promise<IYapiSwagger> {
+		return this.get<IYapiSwagger>('plugin/exportSwagger', {
 			params,
 			headers: {
 				Cookie: this.cookie

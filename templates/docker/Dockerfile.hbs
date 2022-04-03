@@ -1,0 +1,24 @@
+FROM node:14.18.1 as builder
+
+COPY .ssh /root/.ssh
+RUN chmod 600 /root/.ssh/id_rsa
+
+WORKDIR /app
+ADD package.json /app/package.json
+ADD yarn.lock /app/yarn.lock
+ADD .yarnrc /app/.yarnrc
+# 添加.git，防止yarn后的prepare hook报错
+ADD .git /app/.git
+
+RUN yarn
+ADD . /app
+RUN yarn lint
+RUN yarn build
+
+# +++++++++++++++++++++++++++++++++++++++++++++++++++
+FROM nginx:stable
+RUN mkdir -p web/logs
+
+COPY --from=builder /app/dist/ /web/dist/
+ADD build/nginx.conf /etc/nginx/conf.d/default.conf
+EXPOSE 80

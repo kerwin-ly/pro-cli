@@ -1,15 +1,15 @@
 import Api from './api';
 import { AxiosRequestConfig } from 'axios';
 import {
-	Group,
-	Project,
-	GroupParams,
-	CreateParams,
-	VariableParams,
-	TagParams,
-	ReleaseTag
-} from '../interface/gitlab-interface';
-import { token, gitlabApiAddress } from '../config/constant';
+	IGitlabGroup,
+	IGitlabProject,
+	IGitlabGroupParams,
+	IGitlabCreateParams,
+	IGitlabVariableParams,
+	IGitlabTagParams,
+	IGitlabReleaseTag
+} from '@typings/gitlab';
+import { GIT_TOKEN } from '@config/constant';
 import { PathLike } from 'fs';
 import * as qs from 'qs';
 
@@ -17,9 +17,9 @@ const gitlabConfig = {
 	returnRejectedPromiseOnError: true,
 	withCredentials: true,
 	timeout: 30000,
-	baseURL: gitlabApiAddress,
+	baseURL: 'https://git.company.com/api/v4/',
 	headers: {
-		'PRIVATE-TOKEN': token,
+		'PRIVATE-TOKEN': GIT_TOKEN,
 		common: {
 			'Cache-Control': 'no-cache, no-store, must-revalidate',
 			Pragma: 'no-cache',
@@ -35,32 +35,32 @@ class GitlabApi extends Api {
 		super(config);
 	}
 
-	getGroups(params: GroupParams): Promise<Group[]> {
-		return this.get<Group[]>('groups', { params });
+	getGroups(params: IGitlabGroupParams): Promise<IGitlabGroup[]> {
+		return this.get<IGitlabGroup[]>('groups', { params });
 	}
 
 	/**
 	 * create project
-	 * @param {CreateParams} params
+	 * @param {IGitlabCreateParams} params
 	 * @returns {Promise<Project>}
 	 * @memberof GitlabApi
 	 */
-	create(params: CreateParams): Promise<Project> {
-		return this.post<Project, CreateParams>('projects', params);
+	create(params: IGitlabCreateParams): Promise<IGitlabProject> {
+		return this.post<IGitlabProject, IGitlabCreateParams>('projects', params);
 	}
 
-	createVariables(params: VariableParams): Promise<null> {
-		return this.post<null, VariableParams>(`projects/${params.id}/variables`, params);
+	createVariables(params: IGitlabVariableParams): Promise<null> {
+		return this.post<null, IGitlabVariableParams>(`projects/${params.id}/variables`, params);
 	}
 
 	/**
-	 * get dg-cli release tags
+	 * get pro-cli release tags
 	 * @param {TagParams} params
 	 * @returns {Promise<ReleaseTag[]>}
 	 * @memberof GitlabApi
 	 */
-	getTags(params: TagParams): Promise<ReleaseTag[]> {
-		return this.get<ReleaseTag[]>(`projects/${params.projectId}/repository/tags`, { params });
+	getTags(params: IGitlabTagParams): Promise<IGitlabReleaseTag[]> {
+		return this.get<IGitlabReleaseTag[]>(`projects/${params.projectId}/repository/tags`, { params });
 	}
 }
 
