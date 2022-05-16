@@ -36,7 +36,7 @@
 		"@babel/parser": "^7.12.10",
 		"@babel/traverse": "^7.12.10",
 		"@babel/types": "^7.12.10",
-		"axios": "^0.19.2",
+		"axios": "^0.21.2",
 		"chalk": "^4.0.0",
 		"commander": "^5.1.0",
 		"fs-extra": "^9.0.1",
